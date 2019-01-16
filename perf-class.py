@@ -78,6 +78,9 @@ if __name__ == "__main__":
                         help='Output symbols that failed matching')
     parser.add_argument('--min', metavar='min', type=float, nargs='?', default=0,
                         help='Minimum percentage to output')
+    parser.add_argument('--separator', metavar='separator', type=str, nargs='?', default=';',
+                        help='Separator')
+
     args = parser.parse_args()
 
     script = Script(args.script[0])
@@ -117,7 +120,7 @@ if __name__ == "__main__":
     for name,cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
         pc = cycles * 100 / float(matched if args.output_failed else total)
         if pc > args.min:
-            print("%s %f" % (name, pc))
+            print("%s%s%f" % (name, args.separator, pc))
 
 
 
