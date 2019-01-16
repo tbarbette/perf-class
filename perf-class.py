@@ -80,6 +80,8 @@ if __name__ == "__main__":
                         help='Minimum percentage to output')
     parser.add_argument('--separator', metavar='separator', type=str, nargs='?', default=';',
                         help='Separator')
+    parser.add_argument('--stack-max', metavar='stack-max', type=int, nargs='?', default=100,
+                        help='Maximum number of function to check in the stack')
 
     args = parser.parse_args()
 
@@ -92,7 +94,9 @@ if __name__ == "__main__":
     unknowns = set()
     for cycles, stack in script.events:
         found = False
-        for addr,symbol,whatever in stack:
+        for i, (addr,symbol,whatever) in enumerate(stack):
+            if i >= args.stack_max:
+                break
             c = map.search(symbol)
             if c:
                 classes.setdefault(c, 0)
@@ -103,6 +107,7 @@ if __name__ == "__main__":
                 if args.show_match:
                     print("%s -> %s" % (symbol, c), file=sys.stderr)
                 break
+
         if not found:
             symbol = stack[0][1]
             if not symbol in unknowns:
@@ -117,8 +122,8 @@ if __name__ == "__main__":
             total += cycles
 
     print("Finished, matched %f%% of cycles" % (100 * matched / float(total)), file=sys.stderr)
-    for name,cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
-        pc = cycles * 100 / float(matched if args.output_failed else total)
+    for name, cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
+        pc = cycles * 100 / float(total if args.output_failed else matched)
         if pc > args.min:
             print("%s%s%f" % (name, args.separator, pc))
 
