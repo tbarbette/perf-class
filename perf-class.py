@@ -36,10 +36,9 @@ class Map(OrderedDict):
 
 
 class Script():
-    events: dict
 
     def __init__(self, fn):
-        self.events = []
+        self.events = {}
 
         symbol = None
         stack = []
@@ -68,9 +67,15 @@ class Script():
         if not match:
             raise Exception("Invalid format %s" % symbol)
 
-        self.events.append(((int(match.group('cycles')), match.group('comm')),
-                            [s.split(' ') for s in stack]))
+        stackref = '\n'.join(stack) + match.group('comm')
+        if stackref in self.events:
+            self.events[stackref] = ((self.events[stackref][0][0]+int(match.group('cycles')), self.events[stackref][0][1]),self.events[stackref][1])
+        else:
+            self.events[stackref] = ((int(match.group('cycles')), match.group('comm')),
+             [s.split(' ') for s in stack])
 
+    def get_events(self):
+        return self.events.values()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Perf mapper')
@@ -103,8 +108,10 @@ if __name__ == "__main__":
     matched = 0
     classes = {}
     unknowns = set()
-    for (cycles, process), stack in script.events:
+    events = script.get_events()
+    for (cycles, process), stack in events:
         found = False
+
         for i, (addr, symbol, whatever) in enumerate(stack):
             if i >= args.stack_max:
                 break
@@ -142,7 +149,7 @@ if __name__ == "__main__":
                 classes[symbol] += cycles
             total += cycles
 
-    print("Finished, matched %f%% of cycles" % (100 * matched / float(total)), file=sys.stderr)
+    print("Finished, matched %f%% of cycles in %d events" % (100 * matched / float(total), len(events)), file=sys.stderr)
     for name, cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
         pc = cycles * 100 / float(total if args.output_failed else matched)
         if pc > args.min:
