@@ -39,6 +39,7 @@ class Script():
 
     def __init__(self, fn):
         self.events = {}
+        self.total = 0
 
         symbol = None
         stack = []
@@ -68,6 +69,7 @@ class Script():
             raise Exception("Invalid format %s" % symbol)
 
         stackref = '\n'.join(stack) + match.group('comm')
+        self.total += int(match.group('cycles'))
         if stackref in self.events:
             self.events[stackref] = ((self.events[stackref][0][0]+int(match.group('cycles')), self.events[stackref][0][1]),self.events[stackref][1])
         else:
@@ -104,7 +106,6 @@ if __name__ == "__main__":
     script = Script(args.script[0])
     map = Map(args.map)
 
-    total = 0
     matched = 0
     classes = {}
     unknowns = set()
@@ -119,7 +120,6 @@ if __name__ == "__main__":
             if c:
                 classes.setdefault(c, 0)
                 classes[c] += cycles
-                total += cycles
                 matched += cycles
                 found = True
                 if args.show_match:
@@ -133,13 +133,12 @@ if __name__ == "__main__":
             if c:
                 classes.setdefault(c, 0)
                 classes[c] += cycles
-                total += cycles
                 matched += cycles
                 continue
 
             symbol = stack[0][1]
             if not symbol in unknowns:
-                if args.show_failed:
+                if args.show_failed and cycles * 100 / script.total > args.min:
                     print("Could not find symbol %s in map, process %s" % (symbol, process), file=sys.stderr)
                     for addr, subsymbol, whatever in stack:
                         print("\t%s" % subsymbol, file=sys.stderr)
@@ -147,10 +146,9 @@ if __name__ == "__main__":
             if args.output_failed:
                 classes.setdefault(symbol, 0)
                 classes[symbol] += cycles
-            total += cycles
 
-    print("Finished, matched %f%% of cycles in %d events" % (100 * matched / float(total), len(events)), file=sys.stderr)
+    print("Finished, matched %f%% of cycles in %d events" % (100 * matched / float(script.total), len(events)), file=sys.stderr)
     for name, cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
-        pc = cycles * 100 / float(total if args.output_failed else matched)
+        pc = cycles * 100 / float(script.total if args.output_failed else matched)
         if pc > args.min:
             print("%s%s%f" % (name, args.separator, pc))
