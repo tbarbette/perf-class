@@ -9,6 +9,7 @@ from collections import OrderedDict
 class Map(OrderedDict):
     def __init__(self, files):
         super().__init__()
+        self.process = {}
         for fn in files:
             f = open(fn, 'r')
             for line in f:
@@ -16,10 +17,19 @@ class Map(OrderedDict):
                 if not line or line.startswith('//') or line.startswith('#'):
                     continue
                 k, v = [x.strip() for x in line.split(':', 1)]
-                self[re.compile(k)] = v
+                if k.startswith("@"):
+                    self.process[re.compile(k[1:])] = v
+                else:
+                    self[re.compile(k)] = v
 
     def search(self, map_v):
         for k, v in self.items():
+            if re.search(k, map_v):
+                return v
+        return None
+
+    def search_process(self, map_v):
+        for k, v in self.process.items():
             if re.search(k, map_v):
                 return v
         return None
@@ -54,11 +64,12 @@ class Script():
             self.__add_symbol(symbol, stack)
 
     def __add_symbol(self, symbol, stack):
-        match = re.match("(?P<comm>.*)\s+(?P<pid>[0-9]+).*:\s+(?P<cycles>[0-9]+)",symbol)
+        match = re.match("(?P<comm>.*)\s+(?P<pid>[0-9]+).*:\s+(?P<cycles>[0-9]+)", symbol)
         if not match:
             raise Exception("Invalid format %s" % symbol)
 
-        self.events.append((int(match.group('cycles')), [s.split(' ') for s in stack]))
+        self.events.append(((int(match.group('cycles')), match.group('comm')),
+                            [s.split(' ') for s in stack]))
 
 
 if __name__ == "__main__":
@@ -92,9 +103,9 @@ if __name__ == "__main__":
     matched = 0
     classes = {}
     unknowns = set()
-    for cycles, stack in script.events:
+    for (cycles, process), stack in script.events:
         found = False
-        for i, (addr,symbol,whatever) in enumerate(stack):
+        for i, (addr, symbol, whatever) in enumerate(stack):
             if i >= args.stack_max:
                 break
             c = map.search(symbol)
@@ -109,10 +120,18 @@ if __name__ == "__main__":
                 break
 
         if not found:
+            c = map.search_process(process)
+            if c:
+                classes.setdefault(c, 0)
+                classes[c] += cycles
+                total += cycles
+                matched += cycles
+                continue
+
             symbol = stack[0][1]
             if not symbol in unknowns:
                 if args.show_failed:
-                    print("Could not find symbol %s in map" % symbol, file=sys.stderr)
+                    print("Could not find symbol %s in map, process %s" % (symbol, process), file=sys.stderr)
                     for addr, subsymbol, whatever in stack:
                         print("\t%s" % subsymbol, file=sys.stderr)
                 unknowns.add(symbol)
@@ -126,6 +145,3 @@ if __name__ == "__main__":
         pc = cycles * 100 / float(total if args.output_failed else matched)
         if pc > args.min:
             print("%s%s%f" % (name, args.separator, pc))
-
-
-
