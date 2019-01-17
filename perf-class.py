@@ -116,7 +116,9 @@ if __name__ == "__main__":
                 matched += cycles
                 found = True
                 if args.show_match:
-                    print("%s -> %s" % (symbol, c), file=sys.stderr)
+                    print("%s -> %s (process %s)" % (symbol, c, process), file=sys.stderr)
+                    for addr, subsymbol, whatever in stack:
+                        print("\t%s" % subsymbol, file=sys.stderr)
                 break
 
         if not found:
