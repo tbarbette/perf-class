@@ -118,34 +118,35 @@ if __name__ == "__main__":
                 break
             c = map.search(symbol)
             if c:
-                classes.setdefault(c, 0)
-                classes[c] += cycles
-                matched += cycles
-                found = True
-                if args.show_match:
-                    print("%s -> %s (process %s)" % (symbol, c, process), file=sys.stderr)
-                    for addr, subsymbol, whatever in stack:
-                        print("\t%s" % subsymbol, file=sys.stderr)
                 break
+
 
         if not found:
             c = map.search_process(process)
             if c:
-                classes.setdefault(c, 0)
-                classes[c] += cycles
-                matched += cycles
-                continue
+                found = True
+            else:
 
-            symbol = stack[0][1]
-            if not symbol in unknowns:
-                if args.show_failed and cycles * 100 / script.total > args.min:
-                    print("Could not find symbol %s in map, process %s" % (symbol, process), file=sys.stderr)
-                    for addr, subsymbol, whatever in stack:
-                        print("\t%s" % subsymbol, file=sys.stderr)
-                unknowns.add(symbol)
-            if args.output_failed:
-                classes.setdefault(symbol, 0)
-                classes[symbol] += cycles
+                symbol = stack[0][1]
+                if not symbol in unknowns:
+                    if args.show_failed and cycles * 100 / script.total > args.min:
+                        print("Could not find symbol %s in map, process %s" % (symbol, process), file=sys.stderr)
+                        for addr, subsymbol, whatever in stack:
+                            print("\t%s" % subsymbol, file=sys.stderr)
+                    unknowns.add(symbol)
+                if args.output_failed:
+                    classes.setdefault(symbol, 0)
+                    classes[symbol] += cycles
+                continue
+        if found:
+            classes.setdefault(c, 0)
+            classes[c] += cycles
+            matched += cycles
+            if args.show_match:
+                print("%s -> %s (process %s)" % (symbol, c, process), file=sys.stderr)
+                for addr, subsymbol, whatever in stack:
+                    print("\t%s" % subsymbol, file=sys.stderr)
+            continue
 
     print("Finished, matched %f%% of cycles in %d events" % (100 * matched / float(script.total), len(events)), file=sys.stderr)
     for name, cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
