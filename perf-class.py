@@ -98,7 +98,7 @@ if __name__ == "__main__":
                         help='Minimum percentage to output')
     parser.add_argument('--separator', metavar='separator', type=str, nargs='?', default=';',
                         help='Separator')
-    parser.add_argument('--stack-max', metavar='stack-max', type=int, nargs='?', default=100,
+    parser.add_argument('--stack-max', metavar='stack_max', type=int, nargs='?', default=100,
                         help='Maximum number of function to check in the stack')
 
     args = parser.parse_args()
