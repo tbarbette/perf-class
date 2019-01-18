@@ -86,3 +86,11 @@ netlink             :   IO
 
 __schedule            : Kernel
 run_ksoftirqd         : Kernel
+
+
+//These applications were running while capturing
+@snort                : Snort
+
+//Final match on irq
+@ksoftirqd             : Kernel
+@kworker|swapper               : Kernel
