@@ -113,13 +113,15 @@ if __name__ == "__main__":
     for (cycles, process), stack in events:
         found = False
 
-        for i, (addr, symbol, whatever) in enumerate(stack):
+        for i, (addr, symbol, location) in enumerate(stack):
             if i >= args.stack_max:
                 break
+            if location == '([kernel.kallsyms])':
+                symbol = 'k'+symbol
             c = map.search(symbol)
             if c:
+                found = True
                 break
-
 
         if not found:
             c = map.search_process(process)
