@@ -128,8 +128,12 @@ if __name__ == "__main__":
             if c:
                 found = True
             else:
-
-                symbol = stack[0][1]
+                if len(stack) == 0:
+                    symbol = process
+                elif len(stack[0]) == 1:
+                    symbol = stack[0][0]
+                else:
+                    symbol = stack[0][1]
                 if not symbol in unknowns:
                     if args.show_failed and cycles * 100 / script.total > args.min:
                         print("Could not find symbol %s in map, process %s" % (symbol, process), file=sys.stderr)
