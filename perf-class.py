@@ -67,14 +67,14 @@ class Script():
         match = re.match("(?P<comm>.*)\s+(?P<pid>[0-9]+).*:\s+(?P<cycles>[0-9]+)", symbol)
         if not match:
             raise Exception("Invalid format %s" % symbol)
-
-        stackref = '\n'.join(stack) + match.group('comm')
+        pstack = [sp for sp in [s.split(' ') for s in stack] if (len(sp) > 1 and sp[1] != '[unknown]')]
+        stackref = '\n'.join([' '.join(ls) for ls in pstack]) + match.group('comm')
         self.total += int(match.group('cycles'))
         if stackref in self.events:
             self.events[stackref] = ((self.events[stackref][0][0]+int(match.group('cycles')), self.events[stackref][0][1]),self.events[stackref][1])
         else:
             self.events[stackref] = ((int(match.group('cycles')), match.group('comm')),
-             [s.split(' ') for s in stack])
+             pstack)
 
     def get_events(self):
         return self.events.values()
@@ -158,4 +158,4 @@ if __name__ == "__main__":
     for name, cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
         pc = cycles * 100 / float(script.total if args.output_failed else matched)
         if pc > args.min:
-            print("%s%s%f" % (name, args.separator, pc))
+            print("%s%s%f" % (name.strip('_'), args.separator, pc))
