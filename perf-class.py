@@ -67,7 +67,13 @@ class Script():
         match = re.match("(?P<comm>.*)\s+(?P<pid>[0-9]+).*:\s+(?P<cycles>[0-9]+)", symbol)
         if not match:
             raise Exception("Invalid format %s" % symbol)
-        pstack = [sp for sp in [s.split(' ') for s in stack] if (len(sp) > 1 and sp[1] != '[unknown]' and sp[1] != '??')]
+        s = []
+        for line in stack:
+            r = re.match("([0-9a-f]+)[ ]+(.+)[ ]+\((.+)\)", line)
+            if r:
+                s.append((r.group(1),r.group(2),r.group(3)))
+
+        pstack = [sp for sp in s if (len(sp) > 1 and sp[1] != '[unknown]' and sp[1] != '??')]
         pstack = [x[0] for x in groupby(pstack)]
         stackref = '\n'.join([' '.join(ls) for ls in pstack]) + match.group('comm')
         self.total += int(match.group('cycles'))
