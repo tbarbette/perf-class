@@ -68,11 +68,12 @@ class Script():
         if not match:
             raise Exception("Invalid format %s" % symbol)
         s = []
+        #Parse the stack
         for line in stack:
-            r = re.match("([0-9a-f]+)[ ]+(.+)[ ]+\((.+)\)", line)
+            r = re.match("([0-9a-f]+)[ ]+(.+?)([+]0x[0-9a-f]+)?[ ]+\((.+)\)", line)
             if r:
-                s.append((r.group(1),r.group(2),r.group(3)))
-
+                s.append((r.group(1),r.group(2),r.group(4)))
+        
         pstack = [sp for sp in s if (len(sp) > 1 and sp[1] != '[unknown]' and sp[1] != '??')]
         pstack = [x[0] for x in groupby(pstack)]
         stackref = '\n'.join([' '.join(ls) for ls in pstack]) + match.group('comm')
@@ -92,6 +93,7 @@ if __name__ == "__main__":
                         help='The perf script')
     parser.add_argument('--map', metavar='map', type=str, nargs='+',
                         help='The perf map')
+    parser.add_argument('--cycles', dest='cycles', action='store_true', default=False, help='Show cycles instead of percentage')
     parser.add_argument('--show-match', dest='show_match', action='store_true',
                         default=False,
                         help='Show match')
@@ -116,8 +118,9 @@ if __name__ == "__main__":
     matched = 0
     classes = {}
     unknowns = set()
-    events = script.get_events()
-    for (cycles, process), stack in events:
+    events = list(script.get_events())
+    events.sort(key=lambda x:x[0][0])
+    for (cycles, process), stack in reversed(events):
         found = False
 
         for i, (addr, symbol, location) in enumerate(stack):
@@ -143,7 +146,7 @@ if __name__ == "__main__":
                     symbol = stack[0][1]
                 if not symbol in unknowns:
                     if args.show_failed and cycles * 100 / script.total > args.min:
-                        print("Could not find symbol %s in map, process %s" % (symbol, process), file=sys.stderr)
+                        print("Could not find symbol %s (%d cycles) in map, process %s" % (symbol, cycles, process), file=sys.stderr)
                         for addr, subsymbol, whatever in stack:
                             print("\t%s" % subsymbol, file=sys.stderr)
                     unknowns.add(symbol)
@@ -165,4 +168,7 @@ if __name__ == "__main__":
     for name, cycles in sorted(list(classes.items()), key=lambda x: x[1], reverse=True):
         pc = cycles * 100 / float(script.total if args.output_failed else matched)
         if pc > args.min:
-            print("%s%s%f" % (name.strip('_'), args.separator, pc))
+            if args.cycles:
+                print("%s%s%d" % (name.strip('_'), args.separator, cycles))
+            else:
+                print("%s%s%f" % (name.strip('_'), args.separator, pc))
