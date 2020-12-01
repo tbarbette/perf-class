@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 import argparse
 import re
@@ -16,7 +16,11 @@ class Map(OrderedDict):
                 line = line.strip()
                 if not line or line.startswith('//') or line.startswith('#'):
                     continue
-                k, v = [x.strip() for x in line.split(':', 1)]
+                parts = line.split(':')
+                if len(parts) > 2:
+                    print("ERROR: Line %s has multiple ':'" % line)
+                    sys.exit(1)
+                k, v = [x.strip() for x in parts]
                 if k.startswith("@"):
                     self.process[re.compile(k[1:])] = v
                 else:
@@ -36,6 +40,8 @@ class Map(OrderedDict):
 
 
 class Script():
+
+    do_addr = False
 
     def __init__(self, fn):
         self.events = {}
@@ -72,8 +78,7 @@ class Script():
         for line in stack:
             r = re.match("([0-9a-f]+)[ ]+(.+?)([+]0x[0-9a-f]+)?[ ]+\((.+)\)", line)
             if r:
-                s.append((r.group(1),r.group(2),r.group(4)))
-        
+                s.append((r.group(1),r.group(2),r.group(4)) if self.do_addr else ("", r.group(2),r.group(4)))
         pstack = [sp for sp in s if (len(sp) > 1 and sp[1] != '[unknown]' and sp[1] != '??')]
         pstack = [x[0] for x in groupby(pstack)]
         stackref = '\n'.join([' '.join(ls) for ls in pstack]) + match.group('comm')
@@ -87,19 +92,24 @@ class Script():
     def get_events(self):
         return self.events.values()
 
-if __name__ == "__main__":
+def perfclass():
     parser = argparse.ArgumentParser(description='Perf mapper')
     parser.add_argument('script', metavar='script', type=str, nargs=1,
                         help='The perf script')
     parser.add_argument('--map', metavar='map', type=str, nargs='+',
-                        help='The perf map')
-    parser.add_argument('--cycles', dest='cycles', action='store_true', default=False, help='Show cycles instead of percentage')
+                        help='The perf map', default=[])
     parser.add_argument('--show-match', dest='show_match', action='store_true',
                         default=False,
                         help='Show match')
     parser.add_argument('--show-failed', dest='show_failed', action='store_true',
                         default=False,
                         help='Show failed matching')
+    parser.add_argument('--parse-address', dest='do_addr', action='store_true',
+                        default=False,
+                        help='Parse the address in code')
+    parser.add_argument('--cycles', dest='cycles', action='store_true',
+                        default=False,
+                        help='Print in cycles')
     parser.add_argument('--no-output-failed', dest='output_failed', action='store_false',
                         default=True,
                         help='Output symbols that failed matching')
@@ -113,6 +123,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     script = Script(args.script[0])
+    script.do_addr = args.do_addr
     map = Map(args.map)
 
     matched = 0
@@ -172,3 +183,6 @@ if __name__ == "__main__":
                 print("%s%s%d" % (name.strip('_'), args.separator, cycles))
             else:
                 print("%s%s%f" % (name.strip('_'), args.separator, pc))
+
+if __name__ == "__main__":
+    perfclass()
