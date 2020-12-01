@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="perf-class",
-    version="1.0.1",
+    version="1.0.2",
     author="Tom Barbette",
     author_email="t.barbette@gmail.com",
     description="A tool to mep perf script events to classes of events using regex",
