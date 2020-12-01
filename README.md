@@ -7,11 +7,17 @@ This program is intended as a preprocessor to show where, roughly, a CPU spend i
 The map file, to describe the mapping, is simply a series of "regex : class", one by line. Each symbol will be matched against the regex, and upon match will be considered of the given class. The tool will start with the top of the stack trace, and if no match is found, re-try with the previous function in the stack, etc. This is needed, and explain why a simple script was not sufficient to achieve the purpose of this script as a lot of time spend in the kernel is in "raw_spin_lock" functions.
 Only the calling functions of those generic hit points will allow to find the reason of the time spent there, and therefore allow a mapping to the class.
 
+# Installation
+This package can be installed with pip, for instance:
+```bash
+pip3 --user install perf-class
+```
+
 # Example
 A result of perf script is providden in the "samples" folder, as well as a sample mapping file.
 
 ```
-python3 perf-class.py samples/perf.script --map samples/kernel.map --no-output-failed --min 0.1
+perf-class samples/perf.script --map samples/kernel.map --no-output-failed --min 0.1
 ```
 
 Will map all symbols exported using "perf record -a -g ... | perf script" in samples/perf.script using the mapping in samples/kernel.map as follow:
@@ -85,4 +91,4 @@ __softirqentry_text_start 0.005063
 lapic_next_deadline 0.005061
 ```
 
-See python3 perf-class.py --help for other options
+See perf-class --help for other options
