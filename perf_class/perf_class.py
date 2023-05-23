@@ -11,6 +11,7 @@ class Map(OrderedDict):
         super().__init__()
         self.process = {}
         for fn in files:
+          try:
             f = open(fn, 'r')
             for line in f:
                 line = line.strip()
@@ -25,6 +26,8 @@ class Map(OrderedDict):
                     self.process[re.compile(k[1:])] = v
                 else:
                     self[re.compile(k)] = v
+          except FileNotFoundError:
+              print("WARNING: %s could not be found, skipping" % fn)
 
     def search(self, map_v):
         for k, v in self.items():
