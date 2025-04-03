@@ -191,7 +191,7 @@ def perfclass():
             classes[c] += cycles
             matched += cycles
             if args.show_match:
-                print("%s -> %s (process %s)" % (symbol, c, process), file=sys.stderr)
+                print("%s -> %s (process %s) %d kcycles" % (symbol, c, process, cycles / 1000), file=sys.stderr)
                 for addr, subsymbol, whatever in stack:
                     print("\t%s" % subsymbol, file=sys.stderr)
             continue
