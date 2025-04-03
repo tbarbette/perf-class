@@ -46,6 +46,7 @@ class Map(OrderedDict):
                         for k in ks:
                             for i, (addr, symbol, location) in enumerate(slist):
                                 if re.search(k, symbol):
+                                    break
                             else:
                                 break
                         else:
