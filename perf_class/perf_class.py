@@ -6,6 +6,12 @@ import sys
 from collections import OrderedDict
 from itertools import groupby
 
+
+class MyList(list):
+        def __hash__(self):
+            s =  sum([hash(l) for l in self])
+            return s
+
 class Map(OrderedDict):
     def __init__(self, files):
         super().__init__()
@@ -25,14 +31,26 @@ class Map(OrderedDict):
                 if k.startswith("@"):
                     self.process[re.compile(k[1:])] = v
                 else:
-                    self[re.compile(k)] = v
+                    subs=k.split("/")
+                    self[MyList(re.compile(s) for s in subs)] = v
           except FileNotFoundError:
               print("WARNING: %s could not be found, skipping" % fn)
 
-    def search(self, map_v):
-        for k, v in self.items():
+    def search(self, map_v, slist):
+        for ks, v in self.items():
+            k=ks[0]
             if re.search(k, map_v):
-                return v
+                    if len(ks) == 1:
+                        return v
+                    else:
+                        for k in ks:
+                            for i, (addr, symbol, location) in enumerate(slist):
+                                if re.search(k, symbol):
+                            else:
+                                break
+                        else:
+                            return v
+                        continue
         return None
 
     def search_process(self, map_v):
@@ -142,7 +160,7 @@ def perfclass():
                 break
             if location == '([kernel.kallsyms])':
                 symbol = 'k'+symbol
-            c = map.search(symbol)
+            c = map.search(symbol,stack)
             if c:
                 found = True
                 break
